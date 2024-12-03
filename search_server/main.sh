@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=2 uvicorn main:app --host=0.0.0.0 --port=8899 --workers=3

@@ -1,0 +1,11 @@
+pandas
+numpy
+tqdm
+torch
+faiss-gpu
+transformers
+pyserini
+nvgpu
+fastapi
+uvicorn[standard]
+gunicorn
