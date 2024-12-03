@@ -1,10 +1,10 @@
-from .models.atomic_text_generator import AtomicTextGenerator
-from .models.query_generator import QueryGenerator
-from .models.DPR_retriever import DPRRetriever
-from .models.evidence_selector import EvidenceSelector
-from .models.agreemnet_checker import AgreementChecker
-from .models.editor import Editor
-from .models.merger import Merger
+from models.atomic_text_generator import AtomicTextGenerator
+from models.query_generator import QueryGenerator
+from models.DPR_retriever import DPRRetriever
+from models.evidence_selector import EvidenceSelector
+from models.agreemnet_checker import AgreementChecker
+from models.editor import Editor
+from models.merger import Merger
 
 import os
 import transformers
@@ -118,12 +118,13 @@ class RARRFreeHal:
     def correct(self):
         data = self.atomic_text_generator.generate_atomic(self.input_data)
         data = self.query_generator.generate_query(data)
-        data = self.DPR_retriever.search_query(data)
-        data = self.evidenc_selector.select_evidence(data)
-        data = self.agreement_checker.agreement_check(data)
-        data = self.editor.revise_text(data)
-        data = self.merger.merge_atomic_text(data)
+        # data = self.DPR_retriever.search_query(data)
+        # data = self.evidenc_selector.select_evidence(data)
+        # data = self.agreement_checker.agreement_check(data)
+        # data = self.editor.revise_text(data)
+        # data = self.merger.merge_atomic_text(data)
         
-        final_data, total_latency_avg = self.transform_dataframe(data)
+        # final_data, total_latency_avg = self.transform_dataframe(data)
         
-        return final_data, total_latency_avg
+        # return final_data, total_latency_avg
+        return data
