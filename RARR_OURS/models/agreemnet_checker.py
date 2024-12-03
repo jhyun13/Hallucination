@@ -56,5 +56,51 @@ class AgreementChecker:
     def agreement_check(self, data: pd.DataFrame):
         print("[Agreement Checker] Chekcing agreement for retrieved doc ...\n")
         
+        atomic_text_list = data['atomic_text']
+        query_list = data['query']
+        selected_evd_list = data['selected_evidence']
+        agreement_list = []
+        agreement_latency_list = []
+        reasoning_list = []
+        
+        for atomic_text, query, evd in tqdm(zip(atomic_text_list, query_list, selected_evd_list)):
+            start_time = time.time()
+            
+            agreement_prompt = AGREEMENT_PROMPT % (atomic_text, query, evd)
+            outputs = self.generating(agreement_prompt)
+            
+            if "- Reasoning: " in outputs:
+                # Reasoning 부분 추출
+                reasoning = outputs.split("- Reasoning: ")[-1].split("\n- Therefore: ")[0].strip()
+                # Therefore 부분 추출
+                outputs = outputs.split("- Therefore: ")[-1].strip()
+                # Agreement 상태 결정
+                if "disagrees" in outputs:
+                    agreement = "Hallucination"
+                else:
+                    agreement = "not Hallucination"
+                    
+            end_time = time.time()
+            latency = end_time - start_time
+            
+            reasoning_list.append(reasoning)
+            agreement_list.append(agreement)
+            agreement_latency_list.append(latency)
+
+        
+        data['reasoning'] = reasoning_list
+        data['agreement'] = agreement_list
+        data['agreement_latency'] = agreement_latency_list
+        
+        # 파일 경로 생성
+        output_dir = "./outputs"
+        os.makedirs(output_dir, exist_ok=True) 
+        output_file = os.path.join(output_dir, f"{self.args.dataset}_agreement_check.csv")
+
+        # 데이터프레임 저장
+        data.to_csv(output_file, index=False, encoding='utf-8-sig')
+            
+        
         print("[Agreement Checker] Completed agreement check.")
+        
         return data

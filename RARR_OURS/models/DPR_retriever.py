@@ -58,7 +58,7 @@ class DPRRetriever:
         return processed_outputs
 
 
-    def __call__(self, data: pd.DataFrame):
+    def search_query(self, data: pd.DataFrame):
         print(f"[DPR Retriever] Retrieving documents for query ...")
 
         query_list = data['query']

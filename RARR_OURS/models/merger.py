@@ -18,7 +18,7 @@ torch.cuda.manual_seed(FIXED_SEED)
 torch.cuda.manual_seed_all(FIXED_SEED)
 random.seed(FIXED_SEED)
 
-class QueryGenerator:
+class Merger:
     def __init__(self, args, pipeline, tokenizer):
         self.args = args        
         self.pipeline = pipeline
