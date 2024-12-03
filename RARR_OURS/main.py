@@ -15,12 +15,13 @@ def main():
     args = set_args()
 
     rarr_freehal = RARRFreeHal(args)
-    data, total_latency_avg = rarr_freehal.correct()
+    # data, total_latency_avg = rarr_freehal.correct()
+    data = rarr_freehal.correct()
     
-    print(f"average of total latency : {total_latency_avg}")
+    # print(f"average of total latency : {total_latency_avg}")
     
 
 if __name__ == "__main__":
     main()
     
-# python main.py --input_path ../data/nq_data2.csv --dataset nq
+# python main.py --input_path ../data/nq/nq_data2.csv --dataset nq
