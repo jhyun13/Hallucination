@@ -15,7 +15,9 @@ def main():
     args = set_args()
 
     rarr_freehal = RARRFreeHal(args)
-    data = rarr_freehal.correct()
+    data, total_latency_avg = rarr_freehal.correct()
+    
+    print(f"average of total latency : {total_latency_avg}")
     
 
 if __name__ == "__main__":

@@ -56,6 +56,39 @@ class Editor:
     def revise_text(self, data: pd.DataFrame):
         print("[Editor] Editing text ...")
         
+        atomic_text_list = data['atomic_text']
+        query_list = data['query']
+        selected_evd_list = data['selected_evidence']
+        
+        revised_text_list = []
+        revision_latency_list = []
+        
+        for atomic_text, query, selected_evd in tqdm(zip(atomic_text_list, query_list, selected_evd_list)):
+            start_time = time.time()
+            
+            revision_prompt = REVISION_PROMPT % (atomic_text, query, selected_evd)
+            outputs = self.generating(revision_prompt)
+            
+            if "- My fix:" in outputs:
+                outputs = outputs.split("- My fix:")[1].strip()
+            
+            revised_text_list.append(outputs)
+            
+            end_time = time.time()
+            latency = end_time - start_time
+            revision_latency_list.append(latency)
+            
+        data['revised_text'] = revised_text_list
+        data['revision_latency'] = revision_latency_list
+        
+        # 파일 경로 생성
+        output_dir = "./outputs"
+        os.makedirs(output_dir, exist_ok=True) 
+        output_file = os.path.join(output_dir, f"{self.args.dataset}_revision.csv")
+
+        # 데이터프레임 저장
+        data.to_csv(output_file, index=False, encoding='utf-8-sig')
+        
         print("[Editor] Editing complete.")
         
         return data
