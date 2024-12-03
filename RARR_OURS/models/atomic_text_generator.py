@@ -38,6 +38,7 @@ class AtomicTextGenerator:
             max_new_tokens = 500,
             # temperature = 0.0,
             repetition_penalty = 1.0,
+            top_p = 1.0,
             do_sample = False
         )
         

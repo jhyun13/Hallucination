@@ -42,13 +42,15 @@ class SearchClass:
             "facebook/dpr-question_encoder-multiset-base", device="cuda:2"
         )
         
-        # self.searcher = FaissSearcher.from_prebuilt_index(
-        #     "wikipedia-dpr-100w.dpr-multi", self.encoder
-        # )
+        # 다운로드 받고, 압축해제 한 후에
+        self.searcher = FaissSearcher.from_prebuilt_index(
+            "wikipedia-dpr-100w.dpr-multi", self.encoder
+        )
         
+        # 이 코드 이용해서 직접 로드하기
         # Prebuilt index 대신 로컬 경로로 직접 초기화
-        index_path = "/home/work/.cache/pyserini/indexes/faiss.wikipedia-dpr-100w.dpr_multi.20200127.f403c3/"
-        self.dense_searcher = FaissSearcher(index_path, self.encoder)
+        # index_path = "/home/work/.cache/pyserini/indexes/faiss.wikipedia-dpr-100w.dpr_multi.20200127.f403c3/"
+        # self.dense_searcher = FaissSearcher(index_path, self.encoder)
         
         # Sparse Index 초기화
         self.sparse_searcher = LuceneSearcher.from_prebuilt_index("wikipedia-dpr-100w")
