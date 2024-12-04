@@ -80,12 +80,12 @@ class SearchClass:
     async def __call__(self, query: List[str]):
         # Dense Index 검색
         print(f"Query received by batch_search: {query}")
-        q_embs = np.array([self.query_encoder.encode(q) for q in query])  # 벡터화
+        q_embs = np.array([self.encoder.encode(q) for q in query])  # 벡터화
         print(f"Encoded query embeddings shape: {q_embs.shape}")
         # q_ids = [str(i) for i in range(len(query))]
-        # dense_results = self.dense_searcher.search(query=query, k=5, threads=10)
+        dense_results = self.dense_searcher.search(query=q_embs, k=5, threads=10)
         # dense_results = self.dense_searcher.batch_search(query, q_ids=q_ids, k=5, threads=10)
-        dense_results = self.dense_searcher.batch_search(q_embs, q_ids=[str(i) for i in range(len(query))], k=5, threads=10)
+        # dense_results = self.dense_searcher.batch_search(q_embs, q_ids=[str(i) for i in range(len(query))], k=5, threads=10)
 
         print(f"Dense Search Results: {dense_results}")
 
