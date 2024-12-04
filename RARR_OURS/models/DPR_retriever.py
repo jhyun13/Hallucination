@@ -48,7 +48,9 @@ class DPRRetriever:
             "query": query,
         }
         response = requests.post(self.search_url, headers=headers, json=pload)
+        print(f"response ::: {response}\n")
         data = json.loads(response.content)
+        print(f"data ::: {data}")
         outputs = data["document"]
         
         processed_outputs = [
@@ -68,7 +70,7 @@ class DPRRetriever:
         for qry in tqdm(query_list):
             start_time = time.time()
             
-            documents = self.search(qry)
+            documents = self.search([qry])
             retrieved_doc_list.append(documents)
             
             end_time = time.time()

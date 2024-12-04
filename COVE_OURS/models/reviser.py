@@ -3,7 +3,7 @@ import os
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-from prompts.rarr_freehal_prompt import REVISION_PROMPT
+from prompts.cove_freehal_prompt import REVISION_PROMPT
 import pandas as pd
 import torch
 import random
@@ -18,14 +18,14 @@ torch.cuda.manual_seed(FIXED_SEED)
 torch.cuda.manual_seed_all(FIXED_SEED)
 random.seed(FIXED_SEED)
 
-class Editor:
+class Reviser:
     def __init__(self, args, pipeline, tokenizer):
         self.args = args        
         self.pipeline = pipeline
         self.tokenizer = tokenizer
         
         transformers.set_seed(FIXED_SEED)
-        print("[Editor] Initialized with provided model and tokenizer.\n")
+        print("[Reviser] Initialized with provided model and tokenizer.\n")
         
         
     # vllm 안쓰는 경우, 허깅페이스에서 모델 불러옴
@@ -54,23 +54,27 @@ class Editor:
         return outputs
     
     def revise_text(self, data: pd.DataFrame):
-        print("[Editor] Editing text ...")
+        print("[Reviser] Revising text ...")
         
         atomic_text_list = data['atomic_text']
-        query_list = data['query']
-        selected_evd_list = data['selected_evidence']
+        plan_list = data['plan']
+        reasoning_list = data['reasoning']
+        agreement_list = data['agreement']
         
         revised_text_list = []
         revision_latency_list = []
         
-        for atomic_text, query, selected_evd in tqdm(zip(atomic_text_list, query_list, selected_evd_list)):
+        for atomic_text, plan, reasoning, agreement in tqdm(zip(atomic_text_list, plan_list, reasoning_list, agreement_list)):
             start_time = time.time()
             
-            revision_prompt = REVISION_PROMPT % (atomic_text, query, selected_evd)
-            outputs = self.generating(revision_prompt)
-            
-            if "- My fix:" in outputs:
-                outputs = outputs.split("- My fix:")[1].strip()
+            if agreement == "Hallucination":
+                revision_prompt = REVISION_PROMPT % (atomic_text, plan, reasoning)
+                outputs = self.generating(revision_prompt)
+                
+                if "- My fix:" in outputs:
+                    outputs = outputs.split("- My fix:")[1].strip()
+            else:
+                outputs = atomic_text
             
             revised_text_list.append(outputs)
             
@@ -89,6 +93,6 @@ class Editor:
         # 데이터프레임 저장
         data.to_csv(output_file, index=False, encoding='utf-8-sig')
         
-        print("[Editor] Editing complete.")
+        print("[Reviser] Revision complete.")
         
         return data

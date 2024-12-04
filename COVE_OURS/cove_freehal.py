@@ -1,8 +1,6 @@
 from models.atomic_text_generator import AtomicTextGenerator
-from models.query_generator import QueryGenerator
-from models.DPR_retriever import DPRRetriever
-from models.evidence_selector import EvidenceSelector
-from models.agreemnet_checker import AgreementChecker
+from models.plan_verifier import PlanVerifier
+from models.execution_verifier import ExecutionVerifier
 from models.reviser import Reviser
 from models.merger import Merger
 
@@ -18,7 +16,7 @@ torch.cuda.manual_seed(FIXED_SEED)
 torch.cuda.manual_seed_all(FIXED_SEED)
 random.seed(FIXED_SEED)
 
-class RARRFreeHal:
+class COVEFreeHal:
     def __init__(self, args):
         
         self.args = args
@@ -40,11 +38,9 @@ class RARRFreeHal:
         # init all the model
         
         self.atomic_text_generator = AtomicTextGenerator(args, self.pipeline, self.tokenizer)
-        self.query_generator = QueryGenerator(args, self.pipeline, self.tokenizer)
-        self.DPR_retriever = DPRRetriever(args)
-        self.evidenc_selector = EvidenceSelector(args)
-        self.agreement_checker = AgreementChecker(args, self.pipeline, self.tokenizer)
-        self.editor = Reviser(args, self.pipeline, self.tokenizer)
+        self.plan_verifier = PlanVerifier(args, self.pipeline, self.tokenizer)
+        self.execution_verifier = ExecutionVerifier(args, self.pipeline, self.tokenizer)
+        self.reviser = Reviser(args, self.pipeline, self.tokenizer)
         self.merger = Merger(args, self.pipeline, self.tokenizer)
         
         
@@ -55,7 +51,6 @@ class RARRFreeHal:
         # input_text 순서 유지
         unique_input_text_order = data['input_text'].unique()
         results = []
-        retrieved_doc_list = data['retrieved_evidence']
         
         for input_text in unique_input_text_order:
             # input_text별 그룹화
@@ -63,17 +58,14 @@ class RARRFreeHal:
             
             # 각 열의 데이터를 리스트로 묶음
             atomic_text_list = group['atomic_text'].tolist()
-            query_list = group['query'].tolist()
-            # retrieved_doc_list = [eval(doc) for doc in group['retrieved_evidence']]  # 문자열로 저장된 리스트를 평가하여 리스트로 변환
-            selected_evidence_list = group['selected_evidence'].tolist()
+            plan_list = group['plan'].tolist()
+            reasoning_list = group['reasoning'].tolist()
             agreement_list = group['agreement'].tolist()
             revised_text_list = group['revised_text'].tolist()
             
             # mid_latency 계산
             group['mid_latency'] = (
-                group['query_latency'] +
-                group['retrieved_latency'] +
-                group['selected_evd_latency'] +
+                group['plan_latency'] +
                 group['agreement_latency'] +
                 group['revised_latency']
             )
@@ -88,9 +80,8 @@ class RARRFreeHal:
                 'total_latency': total_latency,
                 'input_text': input_text,
                 'atomic_text': atomic_text_list,
-                'atomic_query': query_list,
-                'retrieved_doc': retrieved_doc_list,  # 중첩 리스트 유지
-                'selected_evidence': selected_evidence_list,
+                'plan': plan_list,
+                'reasoning': reasoning_list,
                 'agreement': agreement_list,
                 'revised_text': revised_text_list,
                 'merged_text': group['merged_text'].iloc[0]
@@ -116,18 +107,13 @@ class RARRFreeHal:
         
     
     def correct(self):
-        # data = self.atomic_text_generator.generate_atomic(self.input_data)
-        # data = self.query_generator.generate_query(data)
-        
-        data = pd.read_csv('/home/work/hyun/Hallucination/RARR_OURS/outputs/nq_query_generation.csv')
-        
-        data = self.DPR_retriever.search_query(data)
-        data = self.evidenc_selector.select_evidence(data)
-        data = self.agreement_checker.agreement_check(data)
-        data = self.editor.revise_text(data)
+        data = self.atomic_text_generator.generate_atomic(self.input_data)
+        data = self.plan_verifier.plan_verification(data)
+        data = self.execution_verifier.execute_verification(data)
+        data = self.reviser.revise_text(data)
         data = self.merger.merge_atomic_text(data)
         
-        final_data, total_latency_avg = self.transform_dataframe(data)
+        # final_data, total_latency_avg = self.transform_dataframe(data)
         
-        return final_data, total_latency_avg
-        # return data
+        # return final_data, total_latency_avg
+        return data
