@@ -67,11 +67,11 @@ class PlanVerifier:
             query_prompt = PLAN_VERIFICATION_PROMPT % atomic_text
             outputs = self.generating(query_prompt)
             
-            if "- Plan: " in outputs:
+            if "- plan: " in outputs:
                 # if outputs[0] == "" or " " or "\n" or " \n"
                 #     outputs = outputs[1]
                 # else:
-                outputs = outputs.split("- Plan: ")[-1]
+                outputs = outputs.split("- plan: ")[-1]
             else:
                 print(f"Error {i} : Plan verifier")
                 

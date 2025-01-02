@@ -53,9 +53,12 @@ class DPRRetriever:
         print(f"data ::: {data}")
         outputs = data["document"]
         
-        processed_outputs = [
-            [self.clean_json_string(doc) for doc in docs] for docs in outputs
-        ]
+        # processed_outputs = [
+        #     [self.clean_json_string(doc) for doc in docs] for docs in outputs
+        # ]
+        
+        processed_outputs = [self.clean_json_string(doc) for docs in outputs for doc in docs]
+
 
         return processed_outputs
 
@@ -74,7 +77,7 @@ class DPRRetriever:
             retrieved_doc_list.append(documents)
             
             end_time = time.time()
-            latency = end_time - start_time()
+            latency = end_time - start_time
             retreived_latency_list.append(latency)
         
         data['retrieved_evidence'] = retrieved_doc_list

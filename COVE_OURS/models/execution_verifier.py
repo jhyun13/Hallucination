@@ -64,10 +64,13 @@ class ExecutionVerifier:
         agreement_latency_list = []
         
         for atomic_text, plan in tqdm(zip(atomic_text_list, plan_list)):
+            reasoning = None
             start_time = time.time()
             
             agreement_prompt = EXECUTE_VERIFICATION_PROMPT % (atomic_text, plan)
             outputs = self.generating(agreement_prompt)
+            
+            print(f"outputs ::: {outputs}")
             
             if "- Reasoning: " in outputs:
                 # Reasoning 부분 추출

@@ -61,10 +61,17 @@ class EvidenceSelector:
 
         for query, list_evidences in tqdm(zip(data['query'], data['retrieved_evidence'])):
             start_time = time.time()
-            list_evidences = ast.litereval(list_evidences)
+            print(f"type ---> {type(list_evidences)}\n\n\n")
+
+            # list_evidences = list_evidences.replace('""', '"').replace("'", '"')
+            # list_evidences = ast.literal_eval(list_evidences)
             
             # 증거 리스트는 이미 리스트 형태로 제공됨
-            docs = [evid.replace("\n", "") for evid in list_evidences]
+            # docs = [evid.replace("\n", "") for evid in list_evidences]
+            
+            print(f"list_evid ---> {list_evidences} ,,,,,,, type ---> {type(list_evidences)}\n\n\n")
+            docs = [evid.replace("\n", "") for evid in list_evidences if isinstance(evid, str)]
+
 
             # 중복 제거 및 정렬
             questions = sorted(set([query]))  # query는 문자열이므로 리스트로 감쌈
@@ -93,7 +100,7 @@ class EvidenceSelector:
             
             end_time = time.time()
             latency = end_time - start_time
-            
+            evd_latency_list.append(latency) 
             
         data['selected_evidence'] = selected_evidences
         data['selected_evd_latency'] = evd_latency_list

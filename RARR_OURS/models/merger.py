@@ -58,7 +58,6 @@ class Merger:
         print("[Merger] Merging revised texts ...")
         
         input_text = data['input_text']
-        edited_text = data['edited_text']
         merged_text_list = []
         merge_latency_list = []
         
@@ -76,7 +75,10 @@ class Merger:
             combined_text = row['combined_revised_text']
             merged_prompt = MERGE_PROMPT % (input_text, combined_text)
             outputs = self.generating(merged_prompt)
-            outputs = outputs[0].split("\n- My merge: ")[-1]
+            if "\n- My merge: " in outputs:
+                outputs = outputs.split("\n- My merge: ")[-1].strip()
+            else:
+                outputs = outputs.strip()
             
             # 원래 데이터프레임의 input_text 개수만큼 복제
             num_occurrences = (data['input_text'] == input_text).sum()
@@ -87,7 +89,7 @@ class Merger:
             merge_latency_list.extend([latency] * num_occurrences)
         
         # 결과를 원래 데이터프레임에 추가
-        data['merged_output'] = merged_text_list
+        data['merged_text'] = merged_text_list
         data['merge_latency'] = merge_latency_list
         
         # 파일 경로 생성

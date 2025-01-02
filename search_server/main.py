@@ -49,7 +49,7 @@ class SearchClass:
         
         # 이 코드 이용해서 직접 로드하기
         # Prebuilt index 대신 로컬 경로로 직접 초기화
-        index_path = "/home/work/.cache/pyserini/indexes/faiss.wikipedia-dpr-100w.dpr_multi.20200127.f403c3.fe307ef2e60ab6e6f3ad66e24a4144ae/"
+        index_path = "/home/work/.cache/pyserini/indexes/faiss.wikipedia-dpr-100w.dpr_multi.20200127.f403c3/"
         self.dense_searcher = FaissSearcher(index_path, self.encoder)
         
         # Sparse Index 초기화
@@ -82,9 +82,9 @@ class SearchClass:
         print(f"Query received by batch_search: {query}")
         q_embs = np.array([self.encoder.encode(q) for q in query])  # 벡터화
         print(f"Encoded query embeddings shape: {q_embs.shape}")
-        # q_ids = [str(i) for i in range(len(query))]
-        dense_results = self.dense_searcher.search(query=q_embs, k=5, threads=10)
-        # dense_results = self.dense_searcher.batch_search(query, q_ids=q_ids, k=5, threads=10)
+        q_ids = [str(i) for i in range(len(query))]
+        # dense_results = self.dense_searcher.search(query=q_embs, k=5, threads=10)
+        dense_results = self.dense_searcher.batch_search(query, q_ids=q_ids, k=5, threads=10)
         # dense_results = self.dense_searcher.batch_search(q_embs, q_ids=[str(i) for i in range(len(query))], k=5, threads=10)
 
         print(f"Dense Search Results: {dense_results}")
@@ -98,9 +98,9 @@ class SearchClass:
                 docid = document.docid
                 content = self.get_content_from_sparse_index(docid)  # Sparse Index에서 내용 조회
                 query_contents.append(content)  # 콘텐츠만 저장
-        #     results_with_content.append(query_contents)  # 최종 결과에 추가
+            results_with_content.append(query_contents)  # 최종 결과에 추가
             
-        # return results_with_content
+        return results_with_content
         
         # query_contents = []  # 각 쿼리에 대한 콘텐츠만 저장
         # print(f"Documents for Query: {dense_results}")
@@ -109,7 +109,7 @@ class SearchClass:
         #     content = self.get_content_from_sparse_index(docid)  # Sparse Index에서 내용 조회
         #     query_contents.append(content)  # 콘텐츠만 저장
             
-        return query_contents
+        # return query_contents
 
 
 search = SearchClass()

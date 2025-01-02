@@ -55,7 +55,7 @@ class RARRFreeHal:
         # input_text 순서 유지
         unique_input_text_order = data['input_text'].unique()
         results = []
-        retrieved_doc_list = data['retrieved_evidence']
+        # retrieved_doc_list = data['retrieved_evidence']
         
         for input_text in unique_input_text_order:
             # input_text별 그룹화
@@ -75,7 +75,7 @@ class RARRFreeHal:
                 group['retrieved_latency'] +
                 group['selected_evd_latency'] +
                 group['agreement_latency'] +
-                group['revised_latency']
+                group['revision_latency']
             )
             # 최대 mid_latency 값
             max_mid_latency = group['mid_latency'].max()
@@ -89,7 +89,7 @@ class RARRFreeHal:
                 'input_text': input_text,
                 'atomic_text': atomic_text_list,
                 'atomic_query': query_list,
-                'retrieved_doc': retrieved_doc_list,  # 중첩 리스트 유지
+                # 'retrieved_doc': retrieved_doc_list,  # 중첩 리스트 유지
                 'selected_evidence': selected_evidence_list,
                 'agreement': agreement_list,
                 'revised_text': revised_text_list,
@@ -116,10 +116,10 @@ class RARRFreeHal:
         
     
     def correct(self):
-        # data = self.atomic_text_generator.generate_atomic(self.input_data)
-        # data = self.query_generator.generate_query(data)
+        data = self.atomic_text_generator.generate_atomic(self.input_data)
+        data = self.query_generator.generate_query(data)
         
-        data = pd.read_csv('/home/work/hyun/Hallucination/RARR_OURS/outputs/nq_query_generation.csv')
+        # data = pd.read_csv('/home/work/hyun/Hallucination/RARR_OURS/outputs/nq_query_generation.csv')
         
         data = self.DPR_retriever.search_query(data)
         data = self.evidenc_selector.select_evidence(data)
