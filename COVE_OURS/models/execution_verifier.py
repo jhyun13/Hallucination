@@ -65,6 +65,7 @@ class ExecutionVerifier:
         
         for atomic_text, plan in tqdm(zip(atomic_text_list, plan_list)):
             reasoning = None
+            agreement = None
             start_time = time.time()
             
             agreement_prompt = EXECUTE_VERIFICATION_PROMPT % (atomic_text, plan)
@@ -72,16 +73,46 @@ class ExecutionVerifier:
             
             print(f"outputs ::: {outputs}")
             
-            if "- Reasoning: " in outputs:
-                # Reasoning 부분 추출
-                reasoning = outputs.split("- Reasoning: ")[-1].split("\n- Therefore: ")[0].strip()
-                # Therefore 부분 추출
-                outputs = outputs.split("- Therefore: ")[-1].strip()
-                # Agreement 상태 결정
-                if "disagrees" in outputs:
-                    agreement = "Hallucination"
-                else:
-                    agreement = "not Hallucination"
+            # if "- Reasoning: " in outputs:
+            #     # Reasoning 부분 추출
+            #     reasoning = outputs.split("- Reasoning: ")[-1].split("\n- Therefore: ")[0].strip()
+            #     # Therefore 부분 추출
+            #     outputs = outputs.split("- Therefore: ")[-1].strip()
+            #     # Agreement 상태 결정
+            #     if "disagrees" in outputs:
+            #         agreement = "Hallucination"
+            #     else:
+            #         agreement = "not Hallucination"
+            
+            if "- Reasoning: " in outputs and "- Therefore: " in outputs:
+                try:
+                    # Reasoning 부분 추출
+                    reasoning_start = outputs.find("- Reasoning: ") + len("- Reasoning: ")
+                    reasoning_end = outputs.find("\n- Therefore: ")
+                    reasoning = outputs[reasoning_start:reasoning_end].strip()
+
+                    # Therefore 부분 추출
+                    therefore_start = outputs.find("- Therefore: ") + len("- Therefore: ")
+                    outputs = outputs[therefore_start:].strip()
+
+                    # Agreement 상태 결정
+                    if "disagrees" in outputs.lower():
+                        agreement = "Hallucination"
+                    else:
+                        agreement = "not Hallucination"
+
+                except Exception as e:
+                    # 예외 처리 및 디버깅 정보 출력
+                    print(f"Error processing outputs: {outputs}")
+                    print(f"Exception: {e}")
+                    reasoning = None
+                    agreement = "Unknown"
+            else:
+                # 필요한 키워드가 없을 경우 기본값 설정
+                print(f"Outputs missing required sections: {outputs}")
+                reasoning = None
+                agreement = "Unknown"
+
                     
             end_time = time.time()
             latency = end_time - start_time
@@ -97,7 +128,7 @@ class ExecutionVerifier:
         
         # 파일 경로 생성
         output_dir = "./outputs"
-        os.makedirs(output_dir, exist_ok=True) 
+        os.makedirs(output_dir, exist_ok=True)
         output_file = os.path.join(output_dir, f"{self.args.dataset}_execute_verification.csv")
 
         # 데이터프레임 저장

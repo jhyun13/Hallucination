@@ -43,7 +43,7 @@ EXECUTE_VERIFICATION_PROMPT = """I will check some things you said.
 - You said: Season 2 of Real Chance of Love was won by Cali.
 - I checked: Who won season 2 of Real Chance of Love?
 - Reasoning: I know that 't answer the question and you said that Cali won season 2 of Real Chance of Love.
-- Therefore: This is irrelevant to what you said.
+- Therefore: This is disagrees with what you said.
 
 - You said: The Stanford Prison Experiment was conducted in the basement of Jordan Hall, Stanford’s psychology building.
 - I checked: Where was Stanford Prison Experiment conducted?
@@ -68,7 +68,7 @@ EXECUTE_VERIFICATION_PROMPT = """I will check some things you said.
 - You said: The Green Jacket is one of the most coveted prizes in golf.
 - I checked: What is the Green Jacket in golf?
 - Reasoning: I know that the Green Jacket is a classic three-button single-breasted and single-vent and you said the Green Jacket is one of the most coveted prizes in all of golf.
-- Therefore: This is irrelevant to what you said.
+- Therefore: This is disagrees with what you said.
 
 - You said: Kelvin Hopins was suspended for allegedly sexually harassing Ava Etemadzadeh.
 - I checked: Why was Kelvin Hopins suspeneded from the Labor Party?
