@@ -108,12 +108,12 @@ class COVEFreeHal:
     
     def correct(self):
         
-        data = pd.read_csv('/home/work/hyun/Hallucination/COVE_OURS/outputs/nq_merge.csv')
-        # data = self.atomic_text_generator.generate_atomic(self.input_data)
-        # data = self.plan_verifier.plan_verification(data)
-        # data = self.execution_verifier.execute_verification(data)
-        # data = self.reviser.revise_text(data)
-        # data = self.merger.merge_atomic_text(data)
+        # data = pd.read_csv('/home/work/hyun/Hallucination/COVE_OURS/outputs/nq_merge.csv')
+        data = self.atomic_text_generator.generate_atomic(self.input_data)
+        data = self.plan_verifier.plan_verification(data)
+        data = self.execution_verifier.execute_verification(data)
+        data = self.reviser.revise_text(data)
+        data = self.merger.merge_atomic_text(data)
         
         
         final_data, total_latency_avg = self.transform_dataframe(data)
