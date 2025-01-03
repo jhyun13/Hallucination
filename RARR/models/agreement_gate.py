@@ -31,12 +31,13 @@ def parse_api_response(api_response: str) -> Tuple[bool, str, str]:
 
 def run_agreement_gate(
     claim: str,
+    model,
+    tokenizer,
     query: str,
     evidence: str,
-    model: str,
     prompt: str,
-    context: str = None,
     num_retries: int = 5,
+    device: str = "cuda",
 ) -> Dict[str, Any]:
     """Checks if a provided evidence contradicts the claim given a query.
 
@@ -54,28 +55,32 @@ def run_agreement_gate(
     Returns:
         gate: A dictionary with the status of the gate and reasoning for decision.
     """
-    if context:
-        gpt3_input = prompt.format(
-            context=context, claim=claim, query=query, evidence=evidence
-        ).strip()
-    else:
-        gpt3_input = prompt.format(claim=claim, query=query, evidence=evidence).strip()
+    input_prompt = prompt.format(claim=claim, query=query, evidence=evidence).strip()
+    len_input = len(input_prompt)
 
     for _ in range(num_retries):
         try:
-            response = openai.Completion.create(
-                model=model,
-                prompt=gpt3_input,
+            inputs = tokenizer(input_prompt, return_tensors="pt").to(device)
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=500,
                 temperature=0.0,
-                max_tokens=256,
-                stop=["\n\n"],
-                logit_bias={"50256": -100},  # Don't allow <|endoftext|> to be generated
+                do_sample=False,
+                top_p=1.0,
+                pad_token_id=tokenizer.eos_token_id,
             )
+            response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            generated_text = response_text[len_input:].strip()
+            print(f"[Agreement Gate] generated_text :: {generated_text}\n")
+            
+            if "\n\n" in generated_text:    
+                generated_text = generated_text.split("\n\n")[0]
+                
             break
-        except openai.error.OpenAIError as exception:
-            print(f"{exception}. Retrying...")
+        except Exception as e:
+            print(f"{e}. Retrying...")
             time.sleep(2)
 
-    is_open, reason, decision = parse_api_response(response.choices[0].text)
+    is_open, reason, decision = parse_api_response(generated_text)
     gate = {"is_open": is_open, "reason": reason, "decision": decision}
     return gate

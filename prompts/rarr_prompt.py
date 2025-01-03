@@ -53,7 +53,7 @@ AGREEMENT_GATE_PROMPT = """I will check some things you said.
 2. I checked: Who won season 2 of Real Chance of Love?
 3. I found this article: Real Chance of Love 2: Back in the Saddle is the second season of the VH1 reality television dating series Real Chance of Love. Ahmad Givens (Real) and Kamal Givens (Chance), former contestants on I Love New York are the central figures.
 4. Reasoning: The article doesn't answer the question and you said that Cali won season 2 of Real Chance of Love.
-5. Therefore: This is irrelevant to what you said.
+5. Therefore: This is disagrees with what you said.
 
 1. You said: The Stanford Prison Experiment was conducted in the basement of Jordan Hall, Stanford’s psychology building.
 2. I checked: Where was Stanford Prison Experiment conducted?
@@ -83,7 +83,7 @@ AGREEMENT_GATE_PROMPT = """I will check some things you said.
 2. I checked: What is the Green Jacket in golf?
 3. I found this article: The green jacket is a classic, three-button, single-breasted and single-vent, featuring the Augusta National Golf Club logo on the left chest pocket. The logo also appears on the brass buttons.
 4. Reasoning: The article said the Green Jacket is a classic three-button single-breasted and single-vent and you said the Green Jacket is one of the most coveted prizes in all of golf.
-5. Therefore: This is irrelevant to what you said.
+5. Therefore: This is disagrees with what you said.
 
 1. You said: Kelvin Hopins was suspended from the Labor Party because he had allegedly sexually harassed and behaved inappropriately towards a Labour Party activist, Ava Etemadzadeh.
 2. I checked: Why was Kelvin Hopins suspeneded from the Labor Party?
