@@ -1,7 +1,7 @@
 """Runs the RARR editor on a JSONL file of claims.
 
 Runs question generation, retrieval, agreement gate, and editing on a file with claims
-using GPT-3 and Bing.
+using Llama-3.1-8B and Wiki search.
 """
 import argparse
 import json
