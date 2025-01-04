@@ -3,10 +3,6 @@ import os
 import time
 from typing import List
 
-import openai
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
 
 def parse_api_response(api_response: str) -> List[str]:
     """Extract questions from the GPT-3 API response.
@@ -72,10 +68,13 @@ def run_rarr_question_generation(
                 )
                 response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
                 generated_text = response_text[len_input:].strip()
-                print(f"[Agreement Gate] generated_text :: {generated_text}\n")
+                print(f"[Question Generation] generated_text \n")
                 
                 if "\n\n" in generated_text:    
                     generated_text = generated_text.split("\n\n")[0]
+                    extracted_questions = parse_api_response(generated_text)
+                    print(f"generated_text :: {extracted_questions}")
+                questions.update(extracted_questions)
                 break
             except Exception as e:
                 print(f"{e}. Retrying...")

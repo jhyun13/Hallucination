@@ -100,6 +100,7 @@ AGREEMENT_GATE_PROMPT = """I will check some things you said.
 1. You said: {claim}
 2. I checked: {query}
 3. I found this article: {evidence}
+4. Reasoning: 
 """.strip()
 
 EDITOR_PROMPT = """I will fix some things you said.

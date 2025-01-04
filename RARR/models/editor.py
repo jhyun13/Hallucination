@@ -74,6 +74,6 @@ def run_rarr_editor(
     # If there was an error in GPT-3 generation, return the claim.
     if not edited_claim:
         edited_claim = claim
-    output = {"text": edited_claim}
+    output = edited_claim
     
     return output

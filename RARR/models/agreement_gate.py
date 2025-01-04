@@ -71,10 +71,10 @@ def run_agreement_gate(
             )
             response_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
             generated_text = response_text[len_input:].strip()
-            print(f"[Agreement Gate] generated_text :: {generated_text}\n")
             
             if "\n\n" in generated_text:    
                 generated_text = generated_text.split("\n\n")[0]
+                print(f"[Agreement Gate] generated_text :: {generated_text}\n")
                 
             break
         except Exception as e:
@@ -82,5 +82,7 @@ def run_agreement_gate(
             time.sleep(2)
 
     is_open, reason, decision = parse_api_response(generated_text)
+    
+    print(f"is_open : {is_open}, reason : {reason}, decision : {decision}\n\n")
     gate = {"is_open": is_open, "reason": reason, "decision": decision}
     return gate

@@ -1,10 +1,13 @@
 import argparse
 import os
+import sys
 import pandas as pd
 import time
 import tqdm
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from prompts.rarr_prompt import QGEN_PROMPT, AGREEMENT_GATE_PROMPT, EDITOR_PROMPT
 from models import agreement_gate, editor, evidence_selection, search, question_generation
@@ -29,7 +32,9 @@ def run_editor_one_instance(
     model = AutoModelForCausalLM.from_pretrained(model_path).to(device)
     
     original_claim = claim
-    agreement_gates = []
+    # agreement_gates = []
+    agreement = []
+    reasoning = []
 
     # 1. Generate questions for the claim
     questions = question_generation.run_rarr_question_generation(
@@ -39,84 +44,74 @@ def run_editor_one_instance(
         prompt=QGEN_PROMPT,
         num_rounds=num_rounds_qgen
     )
+    
+    print(f"question :: {questions}\n\n")
 
     # 2. Run search on generated questions
     evidences_for_questions = [
         search.run_search(
             query=query,
-            search_url=search_url,
-            max_search_results_per_query=max_search_results_per_query,
-            max_sentences_per_passage=max_sentences_per_passage,
-            sliding_distance=sliding_distance,
-            max_passages_per_search_result_to_return=max_passages_per_search_result,
+            search_url=search_url
         )
         for query in questions
     ]
+    
+    print(f"evidences_for_questions :: {evidences_for_questions}\n\n")
 
     # 3. Flatten the evidences per question into a single list.
-    used_evidences = [
-        e
-        for cur_evids in evidences_for_questions
-        for e in cur_evids[:max_evidences_per_question]
-    ]
+    # used_evidences = [
+    #     e
+    #     for cur_evids in evidences_for_questions
+    #     for e in cur_evids[:max_evidences_per_question]
+    # ]
 
     # 4. Iterative editing over each evidence
     revision_steps = []
-    for evid in used_evidences:
+    for qry, evid in zip(questions, evidences_for_questions):
         # Run the agreement gate
         gate = agreement_gate.run_agreement_gate(
             claim=claim,
-            query=evid["query"],
+            query=qry,
             model=model,
             tokenizer=tokenizer,
-            evidence=evid["text"],
+            evidence=evid,
             prompt=AGREEMENT_GATE_PROMPT
         )
-        agreement_gates.append(gate)
+        # agreement_gates.append(gate)
+        reasoning.append(gate["reason"])
 
         # Run the editor gate if the agreement gate is open
         if gate["is_open"]:
+            agreement.append("Hallucination")
+            
             edited_claim = editor.run_rarr_editor(
                 claim=claim,
                 model=model,
                 tokenizer=tokenizer,
-                query=evid["query"],
-                evidence=evid["text"],
+                query=qry,
+                evidence=evid,
                 prompt=EDITOR_PROMPT,
-            )["text"]
+            )
 
             # Don't keep the edit if the editor makes a huge change
             if abs(len(claim) - len(edited_claim)) / len(claim) <= max_edit_ratio:
                 claim = edited_claim
+        else :
+            agreement.append("not Hallucination")
 
-        revision_steps.append({"text": claim})
+        revision_steps.append(claim)
 
-    # Compile the result
-    # result = {
-    #     "text": original_claim,
-    #     "questions": questions,
-    #     "evidences_for_questions": evidences_for_questions,
-    #     "revisions": [
-    #         {
-    #             "original_text": original_claim,
-    #             "revised_text": revision_steps[-1]["text"] if revision_steps else original_claim,
-    #             "evidences": used_evidences,
-    #             "agreement_gates": agreement_gates,
-    #             "revision_steps": revision_steps,
-    #         }
-    #     ],
-    # }
     result = {
         "text": original_claim,
         "questions": questions,
         "evidences_for_questions": evidences_for_questions,
-        "revised_text": revision_steps[-1]["text"] if revision_steps else original_claim,
-        "evidences": used_evidences,
-        "agreement_gates": agreement_gates,
-        "revision_steps": revision_steps
+        "revised_text": revision_steps,
+        "evidences": evidences_for_questions,
+        "agreement": agreement,
+        "reason": reasoning
     }
-    selected_evidences = evidence_selection.select_evidences(result)
-    result["selected_evidences"] = selected_evidences
+    # selected_evidences = evidence_selection.select_evidences(result)
+    # result["selected_evidences"] = selected_evidences
     
     return result
 
@@ -126,8 +121,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input_file", type=str, required=True, help="Input CSV file of claims.")
     parser.add_argument("--output_file", type=str, required=True, help="Output CSV file to write results.")
-    parser.add_argument("--claim_field", default="model_outputs_explanation", type=str, help="Field in CSV to process.")
-    parser.add_argument("--model", default="meta-llama/Llama-3.1-8B-Instruct", type=str, help="Model path.")
+    # parser.add_argument("--claim_field", default="model_outputs_explanation", type=str, help="Field in CSV to process.")
+    parser.add_argument("--model", default="meta-llama/Llama-3.1-8B", type=str, help="Model path.")
     parser.add_argument("--search_url", default="http://127.0.0.1:8000/", type=str, help="Search API endpoint URL.")
     parser.add_argument("--num_rounds_qgen", default=3, type=int, help="Number of question generation rounds.")
     parser.add_argument("--max_search_results_per_query", default=5, type=int, help="Maximum search results per query.")
@@ -151,7 +146,8 @@ def main():
 
     # Process each claim
     for idx, row in tqdm.tqdm(data.iterrows(), total=len(data)):
-        claim = row[args.claim_field]
+        # claim = row[args.claim_field]
+        claim = row['input']
 
         start_time = time.time()
         result = run_editor_one_instance(
@@ -171,11 +167,12 @@ def main():
         # Add latency and results
         result["total_latency"] = end_time - start_time
         all_results.append({
-            "claim": claim,
-            "questions": result.get("questions"),
-            "evidences": result.get("evidences_for_questions"),
-            "revisions": result.get("revisions"),
-            "selected_evidences": result.get("selected_evidences"),
+            "claim": result["text"],
+            "questions": result["questions"],
+            "evidences": result["evidences_for_questions"],
+            "revised_text": result["revised_text"],
+            "agreement": result["agreement"],
+            "reason": result["reason"],
             "total_latency": result["total_latency"],
         })
 
@@ -187,3 +184,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# python run_editor_sequential_csv.py --input_file ../data/nq/nq_data1.csv --output_file ./outputs/nq_finish.csv

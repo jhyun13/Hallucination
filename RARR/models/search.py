@@ -1,25 +1,21 @@
-"""Utils for searching a query and returning top passages from search results."""
-import concurrent.futures
-import itertools
-import os
-import random
-from typing import Any, Dict, List, Tuple
-
-import bs4
 import requests
-import spacy
-import torch
-from sentence_transformers import CrossEncoder
+import json
+from typing import List, Dict, Any
 
-PASSAGE_RANKER = CrossEncoder(
-    "cross-encoder/ms-marco-MiniLM-L-6-v2",
-    max_length=512,
-    device="cpu",
-)
-SEARCH_URL = "https://api.bing.microsoft.com/v7.0/search/"
-SUBSCRIPTION_KEY = os.getenv("AZURE_SEARCH_KEY")
-TOKENIZER = spacy.load("en_core_web_sm", disable=["ner", "tagger", "lemmatizer"])
-
+def clean_json_string(json_string: str) -> str:
+    """
+    Cleans a JSON string by removing escape characters and unnecessary whitespace.
+    """
+    return (
+        json_string.replace('"', '"')
+        .replace("\"", '"')
+        .replace("\\n", " ")
+        .replace("\\'", "'")
+        .replace('"""', '"')
+        .replace('\n', ' ')
+        .replace('""""', '"')
+        .strip()
+    )
 
 def chunk_text(
     text: str,
@@ -27,7 +23,8 @@ def chunk_text(
     filter_sentence_len: int,
     sliding_distance: int = None,
 ) -> List[str]:
-    """Chunks text into passages using a sliding window.
+    """
+    Chunks text into passages using a sliding window.
 
     Args:
         text: Text to chunk into passages.
@@ -44,7 +41,9 @@ def chunk_text(
 
     passages = []
     try:
-        doc = TOKENIZER(text[:500000])  # Take 500k chars to not break tokenization.
+        import spacy
+        nlp = spacy.load("en_core_web_sm", disable=["ner", "tagger", "lemmatizer"])
+        doc = nlp(text[:500000])  # Take 500k chars to not break tokenization.
         sents = [
             s.text
             for s in doc.sents
@@ -57,163 +56,89 @@ def chunk_text(
 
     return passages
 
-
-def is_tag_visible(element: bs4.element) -> bool:
-    """Determines if an HTML element is visible.
-
-    Args:
-        element: A BeautifulSoup element to check the visiblity of.
-    returns:
-        Whether the element is visible.
+def score_and_sort_passages(passages: List[str], query: str) -> List[Dict[str, Any]]:
     """
-    if element.parent.name in [
-        "style",
-        "script",
-        "head",
-        "title",
-        "meta",
-        "[document]",
-    ] or isinstance(element, bs4.element.Comment):
-        return False
-    return True
-
-
-def scrape_url(url: str, timeout: float = 3) -> Tuple[str, str]:
-    """Scrapes a URL for all text information.
+    Scores passages by relevance to the query and sorts them by score.
 
     Args:
-        url: URL of webpage to scrape.
-        timeout: Timeout of the requests call.
+        passages: A list of text passages.
+        query: The query string.
+
     Returns:
-        web_text: The visible text of the scraped URL.
-        url: URL input.
+        A list of dictionaries containing passages and their scores, sorted by score.
     """
-    # Scrape the URL
-    try:
-        response = requests.get(url, timeout=timeout)
-        response.raise_for_status()
-    except requests.exceptions.RequestException as _:
-        return None, url
+    from sentence_transformers import CrossEncoder
 
-    # Extract out all text from the tags
-    try:
-        soup = bs4.BeautifulSoup(response.text, "html.parser")
-        texts = soup.findAll(text=True)
-        # Filter out invisible text from the page.
-        visible_text = filter(is_tag_visible, texts)
-    except Exception as _:
-        return None, url
+    # Load the cross-encoder for scoring
+    model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2", device="cuda")
 
-    # Returns all the text concatenated as a string.
-    web_text = " ".join(t.strip() for t in visible_text).strip()
-    # Clean up spacing.
-    web_text = " ".join(web_text.split())
-    return web_text, url
+    # Score each passage
+    scores = model.predict([(query, passage) for passage in passages]).tolist()
 
+    # Combine passages and scores, then sort by score in descending order
+    scored_passages = [
+        {"text": passage, "score": score}
+        for passage, score in zip(passages, scores)
+    ]
+    scored_passages.sort(key=lambda x: x["score"], reverse=True)
 
-def search_bing(query: str, timeout: float = 3) -> List[str]:
-    """Searches the query using Bing.
-    Args:
-        query: Search query.
-        timeout: Timeout of the requests call.
-    Returns:
-        search_results: A list of the top URLs relevant to the query.
-    """
-    headers = {"Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY}
-    params = {"q": query, "textDecorations": True, "textFormat": "HTML"}
-    response = requests.get(SEARCH_URL, headers=headers, params=params, timeout=timeout)
-    response.raise_for_status()
-
-    response = response.json()
-    search_results = [r["url"] for r in response["webPages"]["value"]]
-    return search_results
-
+    return scored_passages
 
 def run_search(
-    query: str,
-    cached_search_results: List[str] = None,
-    max_search_results_per_query: int = 3,
-    max_sentences_per_passage: int = 5,
+    query: List[str], 
+    search_url: str,
+    sentences_per_passage: int = 5, 
+    filter_sentence_len: int = 250, 
     sliding_distance: int = 1,
-    max_passages_per_search_result_to_return: int = 1,
-    timeout: float = 3,
-    randomize_num_sentences: bool = False,
-    filter_sentence_len: int = 250,
-    max_passages_per_search_result_to_score: int = 30,
-) -> List[Dict[str, Any]]:
-    """Searches the query on a search engine and returns the most relevant information.
+) -> List[List[Dict[str, Any]]]:
+    """
+    Sends queries to the search server, retrieves results, chunks the texts into passages,
+    scores the passages, and sorts them by relevance.
 
     Args:
-        query: Search query.
-        max_search_results_per_query: Maximum number of search results to get return.
-        max_sentences_per_passage: Maximum number of sentences for each passage.
-        filter_sentence_len: Maximum length of a sentence before being filtered.
-        sliding_distance: Sliding distance over the sentences of each search result.
-            Used to extract passages.
-        max_passages_per_search_result_to_score: Maxinum number of passages to score for
-            each search result.
-        max_passages_per_search_result_to_return: Maximum number of passages to return
-            for each search result.
+        queries: A list of query strings.
+        search_url: URL of the search server.
+        sentences_per_passage: Number of sentences per passage.
+        filter_sentence_len: Maximum number of characters per sentence.
+        sliding_distance: Sliding distance for overlapping passages.
+
     Returns:
-        retrieved_passages: Top retrieved passages for the search query.
+        A list of lists where each sublist contains scored and sorted passages for the corresponding query.
     """
-    if cached_search_results is not None:
-        search_results = cached_search_results
-    else:
-        search_results = search_bing(query, timeout=timeout)
+    headers = {"User-Agent": "Test Client"}
+    payload = {"query": [query]}
 
-    # Scrape search results in parallel
-    with concurrent.futures.ThreadPoolExecutor() as e:
-        scraped_results = e.map(scrape_url, search_results, itertools.repeat(timeout))
-    # Remove URLs if we weren't able to scrape anything or if they are a PDF.
-    scraped_results = [r for r in scraped_results if r[0] and ".pdf" not in r[1]]
+    try:
+        response = requests.post(search_url, headers=headers, json=payload)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Error in search server request: {e}")
+        return [[] for _ in query]
 
-    # Iterate through the scraped results and extract out the most useful passages.
-    retrieved_passages = []
-    for webtext, url in scraped_results[:max_search_results_per_query]:
-        if randomize_num_sentences:
-            sents_per_passage = random.randint(1, max_sentences_per_passage)
-        else:
-            sents_per_passage = max_sentences_per_passage
+    try:
+        data = json.loads(response.content)
+        outputs = data.get("document", [])
+        processed_outputs = [clean_json_string(doc) for docs in outputs for doc in docs]
 
-        # Chunk the extracted text into passages.
-        passages = chunk_text(
-            text=webtext,
-            sentences_per_passage=sents_per_passage,
-            filter_sentence_len=filter_sentence_len,
-            sliding_distance=sliding_distance,
-        )
-        passages = passages[:max_passages_per_search_result_to_score]
-        if not passages:
-            continue
-
-        # Score the passages by relevance to the query using a cross-encoder.
-        scores = PASSAGE_RANKER.predict([(query, p) for p in passages]).tolist()
-        passage_scores = list(zip(passages, scores))
-
-        # Take the top passages_per_search passages for the current search result.
-        passage_scores.sort(key=lambda x: x[1], reverse=True)
-        for passage, score in passage_scores[:max_passages_per_search_result_to_return]:
-            retrieved_passages.append(
-                {
-                    "text": passage,
-                    "url": url,
-                    "query": query,
-                    "sents_per_passage": sents_per_passage,
-                    "retrieval_score": score,  # Cross-encoder score as retr score
-                }
+        # final_results = []
+        for qry, text in zip(query, processed_outputs):
+            passages = chunk_text(
+                text=text,
+                sentences_per_passage=sentences_per_passage,
+                filter_sentence_len=filter_sentence_len,
+                sliding_distance=sliding_distance,
             )
+            scored_passages = score_and_sort_passages(passages, qry)
+        #     final_results.append(scored_passages)
 
-    if retrieved_passages:
-        # Sort all retrieved passages by the retrieval score.
-        retrieved_passages = sorted(
-            retrieved_passages, key=lambda d: d["retrieval_score"], reverse=True
-        )
+        # return final_results
+            if scored_passages:
+                # Take the highest scoring passage's text
+                highest_scoring_text = scored_passages[0]["text"]
+            else:
+                highest_scoring_text = ""
 
-        # Normalize the retreival scores into probabilities
-        scores = [r["retrieval_score"] for r in retrieved_passages]
-        probs = torch.nn.functional.softmax(torch.Tensor(scores), dim=-1).tolist()
-        for prob, passage in zip(probs, retrieved_passages):
-            passage["score"] = prob
-
-    return retrieved_passages
+        return highest_scoring_text
+    except (KeyError, json.JSONDecodeError) as e:
+        print(f"Error parsing search server response: {e}")
+        return [[] for _ in query]
