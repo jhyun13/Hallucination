@@ -41,13 +41,13 @@ class ExecutionVerifier:
             top_p = 1.0,
             do_sample = False
         )
-        
+
         # 생성된 텍스트 가져오기
         outputs = results[0]["generated_text"][len_input:]
-        print(f'outputs (raw) :: {outputs}\n')
+        # print(f'outputs (raw) :: {outputs}\n')
         
         # "\n\n"에서 텍스트를 잘라내기 -> stop 후처리
-        if "\n\n" in outputs:    
+        if "\n\n" in outputs:
             outputs = outputs.split("\n\n")[0]
             
         print(f'\\n\\n 후처리한 output:: {outputs}\n\n')
@@ -69,9 +69,10 @@ class ExecutionVerifier:
             start_time = time.time()
             
             agreement_prompt = EXECUTE_VERIFICATION_PROMPT % (input_text, plan)
+            print(f"prompt : {agreement_prompt}\n")
             outputs = self.generating(agreement_prompt)
             
-            print(f"outputs ::: {outputs}")
+            # print(f"outputs ::: {outputs}")
             
             if "- Reasoning: " in outputs and "- Therefore: " in outputs:
                 try:
