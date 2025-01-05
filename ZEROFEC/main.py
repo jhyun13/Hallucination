@@ -1,9 +1,8 @@
-from zerofec_freehal import ZeroFECFreeHal
+from zerofec import ZeroFEC
 from types import SimpleNamespace
 import argparse
 import json
 import csv
-import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--input_path', required=True)
@@ -38,11 +37,9 @@ model_args = get_fever_model_args()
 
 zerofec_freehal = ZeroFECFreeHal(model_args)
 
-# CSV 파일 읽어서 각 행을 개별 DataFrame으로 변환
 with open(args.input_path, 'r') as f:
-    reader = csv.DictReader(f)  # CSV의 각 행을 딕셔너리로 읽음
-    inputs = [pd.DataFrame([row]) for row in reader]  # 각 행을 DataFrame으로 변환하여 리스트에 저장
-
+    reader = csv.DictReader(f)  # CSV 파일의 각 행을 딕셔너리로 읽음
+    inputs = [row for row in reader]  # 리스트로 변환
 
 outputs = zerofec_freehal.batch_correct(inputs)
 
