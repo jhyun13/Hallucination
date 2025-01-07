@@ -1,4 +1,3 @@
-import sys
 import os
 import pandas as pd
 import torch
@@ -7,8 +6,7 @@ from tqdm import tqdm
 import time
 from sentence_transformers import CrossEncoder
 import itertools
-import ast
-from typing import Any, Dict, List
+from typing import List
 
 # fixed seed
 FIXED_SEED = 42
@@ -61,15 +59,7 @@ class EvidenceSelector:
 
         for query, list_evidences in tqdm(zip(data['query'], data['retrieved_evidence'])):
             start_time = time.time()
-            print(f"type ---> {type(list_evidences)}\n\n\n")
-
-            # list_evidences = list_evidences.replace('""', '"').replace("'", '"')
-            # list_evidences = ast.literal_eval(list_evidences)
             
-            # 증거 리스트는 이미 리스트 형태로 제공됨
-            # docs = [evid.replace("\n", "") for evid in list_evidences]
-            
-            print(f"list_evid ---> {list_evidences} ,,,,,,, type ---> {type(list_evidences)}\n\n\n")
             docs = [evid.replace("\n", "") for evid in list_evidences if isinstance(evid, str)]
 
 

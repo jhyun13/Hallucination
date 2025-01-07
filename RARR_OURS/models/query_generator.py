@@ -28,7 +28,6 @@ class QueryGenerator:
         print("[Query Generator] Initialized with provided model and tokenizer.\n")
         
         
-    # vllm 안쓰는 경우, 허깅페이스에서 모델 불러옴
     def generating(self, inputs: str):
         len_input = len(inputs)
         
@@ -43,14 +42,11 @@ class QueryGenerator:
         
         # 생성된 텍스트 가져오기
         outputs = results[0]["generated_text"][len_input:]
-        # print(f'outputs:: {outputs}\n')
         
         # "\n\n"에서 텍스트를 잘라내기 -> stop 후처리
         if "\n\n" in outputs:    
             outputs = outputs.split("\n\n")[0]
             
-        # print(f'\\n\\n 후처리한 output:: {outputs}\n\n')
-
         return outputs
     
     def generate_query(self, data: pd.DataFrame):
@@ -67,9 +63,6 @@ class QueryGenerator:
             outputs = self.generating(query_prompt)
             
             if "- I googled: " in outputs:
-                # if outputs[0] == "" or " " or "\n" or " \n"
-                #     outputs = outputs[1]
-                # else:
                 outputs = outputs.split("- I googled: ")[-1]
             else:
                 print(f"Error {i} : Query Generator")

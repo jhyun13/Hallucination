@@ -20,7 +20,6 @@ class DPRRetriever:
         self.args = args 
         self.search_url = args.search_url    
         self.batch_size = 1000
-        #self.batch_size = args.batch_size 
         
         print("[DPR Retriever] Initialized with search url.\n")
         
@@ -48,17 +47,10 @@ class DPRRetriever:
             "query": query,
         }
         response = requests.post(self.search_url, headers=headers, json=pload)
-        print(f"response ::: {response}\n")
         data = json.loads(response.content)
-        print(f"data ::: {data}")
         outputs = data["document"]
         
-        # processed_outputs = [
-        #     [self.clean_json_string(doc) for doc in docs] for docs in outputs
-        # ]
-        
         processed_outputs = [self.clean_json_string(doc) for docs in outputs for doc in docs]
-
 
         return processed_outputs
 

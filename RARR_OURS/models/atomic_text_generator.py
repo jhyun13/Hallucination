@@ -29,7 +29,6 @@ class AtomicTextGenerator:
         print("[Atomic Text Generator] Initialized with provided model and tokenizer.\n")
         
         
-    # vllm 안쓰는 경우, 허깅페이스에서 모델 불러옴
     def generating(self, inputs: str):
         len_input = len(inputs)
         
@@ -44,13 +43,10 @@ class AtomicTextGenerator:
         
         # 생성된 텍스트 가져오기
         outputs = results[0]["generated_text"][len_input:]
-        # print(f'outputs:: {outputs}\n')
         
         # "\n\n"에서 텍스트를 잘라내기 -> stop 후처리
         if "\n\n" in outputs:    
             outputs = outputs.split("\n\n")[0]
-            
-        # print(f'\\n\\n 후처리한 output:: {outputs}\n\n')
 
         return outputs
     
@@ -89,8 +85,6 @@ class AtomicTextGenerator:
             latency = end_time - start_time
             
             latency_list.extend([latency] * len(atomic_list))
-        
-        # latency = np.mean(latency_list)
         
         # 결과를 데이터프레임으로 변환
         result_df = pd.DataFrame({

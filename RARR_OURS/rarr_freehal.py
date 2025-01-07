@@ -55,7 +55,6 @@ class RARRFreeHal:
         # input_text 순서 유지
         unique_input_text_order = data['input_text'].unique()
         results = []
-        # retrieved_doc_list = data['retrieved_evidence']
         
         for input_text in unique_input_text_order:
             # input_text별 그룹화
@@ -64,7 +63,6 @@ class RARRFreeHal:
             # 각 열의 데이터를 리스트로 묶음
             atomic_text_list = group['atomic_text'].tolist()
             query_list = group['query'].tolist()
-            # retrieved_doc_list = [eval(doc) for doc in group['retrieved_evidence']]  # 문자열로 저장된 리스트를 평가하여 리스트로 변환
             selected_evidence_list = group['selected_evidence'].tolist()
             agreement_list = group['agreement'].tolist()
             revised_text_list = group['revised_text'].tolist()
@@ -89,7 +87,6 @@ class RARRFreeHal:
                 'input_text': input_text,
                 'atomic_text': atomic_text_list,
                 'atomic_query': query_list,
-                # 'retrieved_doc': retrieved_doc_list,  # 중첩 리스트 유지
                 'selected_evidence': selected_evidence_list,
                 'agreement': agreement_list,
                 'revised_text': revised_text_list,
@@ -117,10 +114,7 @@ class RARRFreeHal:
     
     def correct(self):
         data = self.atomic_text_generator.generate_atomic(self.input_data)
-        data = self.query_generator.generate_query(data)
-        
-        # data = pd.read_csv('/home/work/hyun/Hallucination/RARR_OURS/outputs/nq_query_generation.csv')
-        
+        data = self.query_generator.generate_query(data)        
         data = self.DPR_retriever.search_query(data)
         data = self.evidenc_selector.select_evidence(data)
         data = self.agreement_checker.agreement_check(data)
@@ -130,4 +124,3 @@ class RARRFreeHal:
         final_data, total_latency_avg = self.transform_dataframe(data)
         
         return final_data, total_latency_avg
-        # return data
