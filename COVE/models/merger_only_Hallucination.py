@@ -27,14 +27,12 @@ class Merger:
         transformers.set_seed(FIXED_SEED)
         print("[Merger] Initialized with provided model and tokenizer.\n")
         
-        
     def generating(self, inputs: str):
         len_input = len(inputs)
         
         results = self.pipeline(
             inputs,
             max_new_tokens = 500,
-            # temperature = 0.0,
             repetition_penalty = 1.0,
             top_p = 1.0,
             do_sample = False
@@ -46,35 +44,47 @@ class Merger:
         # "\n\n"에서 텍스트를 잘라내기 -> stop 후처리
         if "\n\n" in outputs:    
             outputs = outputs.split("\n\n")[0]
-            
+
         return outputs
     
     
-    def merge_atomic_text(self, data: pd.DataFrame):
+    def merge_text(self, data: pd.DataFrame):
         print("[Merger] Merging revised texts ...")
         
         input_text = data['input_text']
         merged_text_list = []
         merge_latency_list = []
         
-        # input_text를 기준으로 edit_text를 "/ "로 결합
-        data['combined_revised_text'] = data.groupby('input_text')['revised_text'].transform(lambda x: '/ '.join(x))
-        
         # 중복 제거를 위해 unique한 행만 남기기
-        unique_data = data[['input_text', 'combined_revised_text']].drop_duplicates().reset_index(drop=True)
+        unique_data = data['input_text'].drop_duplicates().reset_index(drop=True)
 
-        # for 루프 실행
-        for _, row in unique_data.iterrows():
-            start_time = time.time()
+        for input_text in unique_data:
             
-            input_text = row['input_text']
-            combined_text = row['combined_revised_text']
-            merged_prompt = MERGE_PROMPT % (input_text, combined_text)
-            outputs = self.generating(merged_prompt)
-            if "\n- My merge: " in outputs:
-                outputs = outputs.split("\n- My merge: ")[-1].strip()
+            # input_text에 해당하는 전체 agreement와 revised_text를 가져옴
+            agreements = data.loc[data['input_text'] == input_text, 'agreement'].tolist()
+            revised_texts = data.loc[data['input_text'] == input_text, 'revised_text'].tolist()
+
+            start_time = time.time()
+
+            if len(agreements) == 1:
+                # Case 1: Single agreement
+                outputs = revised_texts[0]
+            elif all(agr == "not Hallucination" for agr in agreements):
+                # Case 2: All "not Hallucination"
+                outputs = revised_texts[0]
             else:
-                outputs = outputs.strip()
+                # Case 3: At least one "Hallucination"
+                hallucinated_texts = [rev for rev, agr in zip(revised_texts, agreements) if agr == "Hallucination"]
+                combined_hallucinated_texts = " / ".join(hallucinated_texts)
+                
+                merged_prompt = MERGE_PROMPT % (input_text, combined_hallucinated_texts)
+                print(f"merged_prompt :::: {merged_prompt}\n\n")
+                outputs = self.generating(merged_prompt)
+                
+                if "\n- My merge: " in outputs:
+                    outputs = outputs.split("\n- My merge: ")[-1].strip()
+                else:
+                    outputs = outputs.strip()
             
             # 원래 데이터프레임의 input_text 개수만큼 복제
             num_occurrences = (data['input_text'] == input_text).sum()

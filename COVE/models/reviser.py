@@ -28,7 +28,6 @@ class Reviser:
         print("[Reviser] Initialized with provided model and tokenizer.\n")
         
         
-    # vllm 안쓰는 경우, 허깅페이스에서 모델 불러옴
     def generating(self, inputs: str):
         len_input = len(inputs)
         

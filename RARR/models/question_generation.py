@@ -1,5 +1,4 @@
 """Utils for running question generation."""
-import os
 import time
 from typing import List
 

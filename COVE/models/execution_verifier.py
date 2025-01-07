@@ -36,7 +36,6 @@ class ExecutionVerifier:
         results = self.pipeline(
             inputs,
             max_new_tokens = 500,
-            # temperature = 0.0,
             repetition_penalty = 1.0,
             top_p = 1.0,
             do_sample = False
@@ -44,14 +43,11 @@ class ExecutionVerifier:
 
         # 생성된 텍스트 가져오기
         outputs = results[0]["generated_text"][len_input:]
-        # print(f'outputs (raw) :: {outputs}\n')
         
         # "\n\n"에서 텍스트를 잘라내기 -> stop 후처리
         if "\n\n" in outputs:
             outputs = outputs.split("\n\n")[0]
             
-        print(f'\\n\\n 후처리한 output:: {outputs}\n\n')
-
         return outputs
     
     def execute_verification(self, data: pd.DataFrame):
@@ -71,9 +67,7 @@ class ExecutionVerifier:
             agreement_prompt = EXECUTE_VERIFICATION_PROMPT % (input_text, plan)
             print(f"prompt : {agreement_prompt}\n")
             outputs = self.generating(agreement_prompt)
-            
-            # print(f"outputs ::: {outputs}")
-            
+                        
             if "- Reasoning: " in outputs and "- Therefore: " in outputs:
                 try:
                     # Reasoning 부분 추출

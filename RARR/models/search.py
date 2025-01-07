@@ -120,7 +120,6 @@ def run_search(
         outputs = data.get("document", [])
         processed_outputs = [clean_json_string(doc) for docs in outputs for doc in docs]
 
-        # final_results = []
         for qry, text in zip(query, processed_outputs):
             passages = chunk_text(
                 text=text,
@@ -129,7 +128,6 @@ def run_search(
                 sliding_distance=sliding_distance,
             )
             scored_passages = score_and_sort_passages(passages, qry)
-        #     final_results.append(scored_passages)
 
         # return final_results
             if scored_passages:

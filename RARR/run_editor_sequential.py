@@ -191,4 +191,4 @@ def main():
 if __name__ == "__main__":
     main()
 
-# python run_editor_sequential_csv.py --input_file ../data/nq/nq_data1.csv --output_file ./outputs/nq_finish.csv
+# python run_editor_sequential_csv.py --input_file ../data/nq/nq_data2.csv --output_file ./outputs/nq_finish.csv

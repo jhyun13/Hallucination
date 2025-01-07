@@ -1,6 +1,7 @@
 from models.plan_verifier import PlanVerifier
 from models.execution_verifier import ExecutionVerifier
 from models.reviser import Reviser
+from models.merger import Merger
 
 import os
 import transformers
@@ -38,6 +39,7 @@ class COVE:
         self.plan_verifier = PlanVerifier(args, self.pipeline, self.tokenizer)
         self.execution_verifier = ExecutionVerifier(args, self.pipeline, self.tokenizer)
         self.reviser = Reviser(args, self.pipeline, self.tokenizer)
+        self.merger = Merger(args, self.pipeline, self.tokenizer)
         
         
         print("Finish loading models.")
@@ -65,7 +67,7 @@ class COVE:
                 group['revision_latency']
             )
             # 최대 mid_latency 값
-            total_latency = group['mid_latency'].max()
+            total_latency = group['mid_latency'].max() + group['merge_latency'].iloc[0]
             
             # 병합된 결과 저장
             results.append({
@@ -74,7 +76,8 @@ class COVE:
                 'plan': plan_list,
                 'reasoning': reasoning_list,
                 'agreement': agreement_list,
-                'revised_text': revised_text_list
+                'revised_text': revised_text_list,
+                'merged_text': group['merged_text'].iloc[0]
             })
             
         # 결과 데이터프레임 생성
@@ -97,15 +100,14 @@ class COVE:
         
     
     def correct(self):
-        
-        data = pd.read_csv('/home/work/hyun/Hallucination/COVE/outputs/nq_plan_verification.csv')
-    
+            
         # data = self.plan_verifier.plan_verification(self.input_data)
-        data = self.execution_verifier.execute_verification(data)
-        data = self.reviser.revise_text(data)
+        # data = self.execution_verifier.execute_verification(data)
+        # data = self.reviser.revise_text(data)
+        data = pd.read_csv('/home/work/hyun/Hallucination/COVE/outputs/nq_revision.csv')
+        data = self.merger.merge_text(data)
         
         
         final_data, total_latency_avg = self.transform_dataframe(data)
         
         return final_data, total_latency_avg
-        # return data

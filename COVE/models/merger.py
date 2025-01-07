@@ -50,7 +50,7 @@ class Merger:
         return outputs
     
     
-    def merge_atomic_text(self, data: pd.DataFrame):
+    def merge_text(self, data: pd.DataFrame):
         print("[Merger] Merging revised texts ...")
         
         input_text = data['input_text']
