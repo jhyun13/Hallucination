@@ -47,8 +47,6 @@ with open(args.input_path, 'r') as f:
 
 outputs = zerofec_freehal.batch_correct(inputs)
 
-# with open(args.output_path,'w') as f:
-#     for output in outputs:
-#         f.write(json.dumps(output, indent=4, ensure_ascii=False)+'\n')
+outputs.to_csv(args.output_path, index=False)
 
 # python main.py --input_path ../data/nq/nq_data2.csv --output_path ./outputs/nq_finish.csv

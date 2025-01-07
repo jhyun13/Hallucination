@@ -12,7 +12,7 @@ torch.cuda.manual_seed(FIXED_SEED)
 torch.cuda.manual_seed_all(FIXED_SEED)
 random.seed(FIXED_SEED)
 
-
+## 프롬프트 변경 필요 !!
 def format_inputs_qa(context: str, question: str):
     # return f"extract answers: <hl> Beyonce further expanded her acting career, starring as blues singer Etta James in the 2008 musical biopic, Cadillac Records. <hl> Her performance in the film received praise from critics, and she garnered several nominations for her portrayal of James, including a Satellite Award nomination for Best Supporting Actress, and a NAACP Image Award nomination for Outstanding Supporting Actress."
     return f"{question} \n {context}"
@@ -20,7 +20,7 @@ def format_inputs_qa(context: str, question: str):
 class QuestionAnswerer:
     def __init__(self, args, model, tokenizer):
         transformers.set_seed(FIXED_SEED)
-        self.args = args        
+        self.args = args
         self.model = model
         self.tokenizer = tokenizer
         
@@ -37,14 +37,11 @@ class QuestionAnswerer:
         
         # 생성된 텍스트 가져오기
         outputs = results[0]["generated_text"][len_input:]
-        # print(f'outputs:: {outputs}\n')
         
         # "\n\n"에서 텍스트를 잘라내기 -> stop 후처리
         if "\n\n" in outputs:
             outputs = outputs.split("\n\n")[0]
             
-        # print(f'\\n\\n 후처리한 output:: {outputs}\n\n')
-
         return outputs
 
     

@@ -28,20 +28,15 @@ class ZeroFECFreeHal:
         print("Loading model and tokenizer...")
         self.model_name = args.qg_path
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(self.model_name)
-        # self.pipeline = transformers.pipeline(
-        #     "text-generation",
-        #     model=self.model_name,
-        #     device_map="auto",
-        #     torch_dtype=torch.bfloat16, 
-        #     pad_token_id=self.tokenizer.eos_token_id 
-        # )
         transformers.set_seed(FIXED_SEED)
         
         # init all the model
         
         self.atomic_text_generator = AtomicTextGenerator(args, self.model_name, self.tokenizer)
-        self.answer_selector = AnswerSelector(args)    
+        self.answer_selector = AnswerSelector(args)
         self.question_generator = QuestionGenerator(args, self.model_name, self.tokenizer)
+        
+        # 검색 단계 필요 !
         self.question_answerer = QuestionAnswerer(args,self.model_name, self.tokenizer)
         self.candidate_generator = CandidateGenerator(args)
         self.entailment_model = EntailmentModel(args)
@@ -56,19 +51,26 @@ class ZeroFECFreeHal:
             inputs: str, the claim to be corrected.
             evidence: str, the list of reference article to check against.
         '''
-        print(f"data :: {data}\n")
 
         data = self.atomic_text_generator.generate_atomic(data)
         data = self.answer_selector.select_answers(data)
         data = self.question_generator.generate_questions(data)
+        # 검색하는 단계 필요 !!
         data = self.question_answerer.generate_answers(data)
         data = self.candidate_generator.generate_candidate(data)
         data = self.entailment_model.run_entailment_prediction(data)
-
         
         return data
-
+    
     def batch_correct(self, datas: List[pd.DataFrame]):
+        self.result = []
 
-        return [self.correct(data) for data in tqdm(datas, total=len(datas))]
-        
+        # Process each DataFrame in the input list
+        for data in tqdm(datas, total=len(datas)):
+            corrected_data = self.correct(data)
+            self.result.append(corrected_data)
+
+        # Combine all corrected DataFrames into one
+        final_result = pd.concat(self.result, ignore_index=True)
+
+        return final_result
