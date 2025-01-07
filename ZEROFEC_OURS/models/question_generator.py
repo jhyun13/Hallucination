@@ -27,7 +27,7 @@ class QuestionGenerator:
         # self.model = AutoModelForSeq2SeqLM.from_pretrained(qg_path).cuda()
         # self.tokenizer = AutoTokenizer.from_pretrained(qg_path)
         self.args = args
-        self.model = model
+        self.pipeline = model
         self.tokenizer = tokenizer
         
     def generating(self, inputs: str):

@@ -9,6 +9,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--input_path', required=True)
 parser.add_argument('--output_path', required=True)
 parser.add_argument('--dataset', required=True, help="nq(NQ), sqa(SQA), haluqa(HaluQA)")
+parser.add_argument('--search_url', default="http://127.0.0.1:8000/", type=str, help="Search API endpoint URL.")
 args = parser.parse_args()
 
 
@@ -46,6 +47,8 @@ with open(args.input_path, 'r') as f:
 
 outputs = zerofec_freehal.batch_correct(inputs)
 
-with open(args.output_path,'w') as f:
-    for output in outputs:
-        f.write(json.dumps(output, indent=4, ensure_ascii=False)+'\n')
+# with open(args.output_path,'w') as f:
+#     for output in outputs:
+#         f.write(json.dumps(output, indent=4, ensure_ascii=False)+'\n')
+
+# python main.py --input_path ../data/nq/nq_data2.csv --output_path ./outputs/nq_finish.csv

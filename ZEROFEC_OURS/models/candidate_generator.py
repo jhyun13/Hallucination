@@ -1,5 +1,5 @@
 from typing import Dict
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
 
 
 def format_inputs(question: str, answer: str):
@@ -10,7 +10,7 @@ class CandidateGenerator:
         self.args = args
         qa2s_tokenizer_path = args.qa2s_tokenizer_path
         qa2s_model_path = args.qa2s_model_path
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(qa2s_model_path).cuda()
+        self.model = AutoModelForCausalLM.from_pretrained(qa2s_model_path).cuda()
         self.tokenizer = AutoTokenizer.from_pretrained(qa2s_tokenizer_path)
 
     def generate_candidate(self, sample: Dict):
